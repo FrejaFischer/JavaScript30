@@ -1,23 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Type Ahead 👀</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="https://fav.farm/🔥" />
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Type Ahead 👀</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="https://fav.farm/🔥" />
+  </head>
+  <body>
+    <form class="search-form">
+      <input type="text" class="search" placeholder="City or State" />
+      <ul class="suggestions">
+        <li>Filter for a city</li>
+        <li>or a state</li>
+      </ul>
+    </form>
+    <script>
+      const endpoint = "https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json";
 
-  <form class="search-form">
-    <input type="text" class="search" placeholder="City or State">
-    <ul class="suggestions">
-      <li>Filter for a city</li>
-      <li>or a state</li>
-    </ul>
-  </form>
-<script>
-const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+      const cities = [];
 
-</script>
-</body>
+      fetch(endpoint) //først skal vi hente dataen (fetch). Det den giver os er et "promise". Ikke noget brugbart endnu, men den siger der nok skal kommer noget
+        .then((blob) => blob.json()) //Dette kan kaldes en blob af informationer (derfor navnet blob, selvvalgt navn), men den ved ikke hvad for en data det er endnu (billede, tekst, musik mm.)
+        //Derfor skal vi fortælle den det er json, hvor der her findes en metode: json(). Dette giver et nyt "promise".
+        .then((data) => cities.push(...data));
+      //Derfra skal vi igen gøre en "then", hvor vi nu vil have den endelige data.
+      //Denne data skal vi have ind i vores const variable. Dette gøres ved at pushe den ind i. De tre prikker "spreed into" vores push metode og dette gør at vores array kommer direkte ind og ikke ind i en yderligere array
+
+      //nu skal vi lave en funktion, der filtrere i vores data, ud fra hvad brugeren søger på i søgefeltet:
+      function findMatches(wordToMatch, cities) {
+        return cities.filter((place) => {
+          //her skal vi finde ud af om byen eller staten matcher der er søgt på
+          const regex = new RegExp(wordToMatch, "gi"); //Her laver vi en variable, der kan finde et match i ens søgning og data. ´g´ står for global, der gør at den kigger igennem hele den string i ens søgning. `i` står for insensitive og kan være sensitiv overfor store og små bogstaver.
+          return place.city.match(regex) || place.state.match(regex); //Her søger vi så i henholdsvis city og state holderne efter et match med vores søgning. || betyder "eller / or"
+        });
+      }
+
+      function numberWithCommas(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+      //denne funktion er direkte copy paste fra Wes Bos egen løsning. Den kan tage store numre om sætte punktummer i så de bliver lettere at læse. #copypastemuch
+
+      function displayMatches() {
+        const matchArray = findMatches(this.value, cities);
+        // console.log(matchArray); Fang altid data'en først og se om der er hul igennem
+        const html = matchArray
+          .map((place) => {
+            const regex = new RegExp(this.value, "gi");
+            const cityName = place.city.replace(regex, `<span class="hl">${this.value}</span>`);
+            const stateName = place.state.replace(regex, `<span class="hl">${this.value}</span>`);
+            //her lave vi igen en variable, der kan finde et match i søgningen og data. Her bruger vi den dog til at kunne highlighte matchet mellem søgningen og data'en, både i by og stat.
+            return `
+          <li>
+            <span class="name"> ${cityName}, ${stateName}</span>
+            <span class="population"> ${numberWithCommas(place.population)}</span>
+          </li>
+          `;
+          })
+          .join("");
+        // Her map'er vi igennem de resultater vi får i matchArray og skaber nyt html, hvori navn på by og state samt størrelsen på byen bliver vist. Det sidste ".join("")" binder alle de forskellige resultater sammen til et array og ikke hver sit. Det ser forkert ud uden.
+        suggestions.innerHTML = html;
+        //og til sidst binder vi det nye html fast til suggestions, der allerede findes i det originale html
+      }
+
+      const searchInput = document.querySelector(".search");
+      const suggestions = document.querySelector(".suggestions");
+
+      searchInput.addEventListener("change", displayMatches);
+      searchInput.addEventListener("keyup", displayMatches);
+      //her bliver det alt sammen brugt ved eventlistener, der lytter til når der sker en ændring + når én knap er blevet trykket på i feltet. Når dette sker kører den displatMatches igennem og derved kommer hele maskineriet i gang
+    </script>
+  </body>
 </html>
